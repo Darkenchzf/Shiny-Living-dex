@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Pokédex Gen 8 – Shiny Living Dex</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body{
+  background:linear-gradient(180deg,#e53935 0%,#1e88e5 30%,#283593 60%,#0d1333 100%);
+  font-family:"Trebuchet MS",Arial,sans-serif;
+  margin:0;
+}
+
+.container{max-width:1300px;margin:auto;padding:20px}
+
+h1{
+  text-align:center;
+  color:#e3f2fd;
+  letter-spacing:2px;
+  text-shadow:0 0 14px rgba(33,150,243,.9),
+              0 0 22px rgba(244,67,54,.9);
+}
+
+.search-box{
+  width:100%;
+  padding:12px;
+  font-size:16px;
+  margin-bottom:18px;
+  border-radius:12px;
+  border:none;
+}
+
+.grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(190px,1fr));
+  gap:18px;
+}
+
+.pokemon-card{perspective:1000px}
+
+.inner{
+  position:relative;
+  height:320px;
+  transition:transform .6s;
+  transform-style:preserve-3d;
+  cursor:pointer;
+}
+
+.pokemon-card.flipped .inner{transform:rotateY(180deg)}
+
+.face{
+  position:absolute;
+  width:100%;
+  height:100%;
+  backface-visibility:hidden;
+  border-radius:18px;
+  padding:14px;
+  box-shadow:0 12px 25px rgba(0,0,0,.6);
+}
+
+/* AVANT */
+.front{
+  background:linear-gradient(135deg,#ef5350,#1e88e5);
+  color:#fff;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  border:3px solid #90caf9;
+}
+
+/* ARRIÈRE */
+.back{
+  background:linear-gradient(135deg,#1a237e,#0d1333);
+  transform:rotateY(180deg);
+  color:#e3f2fd;
+  font-size:13px;
+  border:3px solid #5c6bc0;
+}
+
+.images img{width:72px}
+
+.type{
+  display:inline-block;
+  padding:4px 10px;
+  margin:2px;
+  border-radius:14px;
+  font-size:12px;
+  font-weight:bold;
+  color:white;
+}
+
+.type.Plante{background:#4caf50}
+.type.Feu{background:#ef5350}
+.type.Eau{background:#42a5f5}
+.type.Électrik{background:#fdd835;color:black}
+.type.Acier{background:#b0bec5;color:black}
+.type.Combat{background:#e53935}
+.type.Dragon{background:#5c6bc0}
+.type.Poison{background:#ab47bc}
+.type.Fée{background:#f48fb1}
+.type.Vol{background:#81d4fa;color:black}
+.type.Normal{background:#bdbdbd;color:black}
+.type.Insecte{background:#9ccc65;color:black}
+.type.Psy{background:#f06292}
+.type.Roche{background:#a1887f}
+.type.Sol{background:#bcaaa4}
+.type.Spectre{background:#7e57c2}
+.type.Glace{background:#81d4fa;color:black}
+.type.Ténèbres{background:#5d4037}
+
+.info{
+  background:rgba(255,255,255,.18);
+  padding:6px 8px;
+  border-radius:8px;
+  margin-top:6px;
+  font-size:13px;
+  display:flex;
+  justify-content:space-between;
+}
+
+.progress{
+  display:flex;
+  gap:2px;
+  margin-bottom:22px;
+  padding:6px;
+  height:26px;
+  border-radius:14px;
+  background:linear-gradient(90deg,#e53935,#1e88e5,#283593);
+  border:2px solid #fff;
+}
+
+.progress-segment{
+  flex:1;
+  background:rgba(255,255,255,.15);
+  border-radius:6px;
+}
+
+.progress-segment.caught{
+  background:linear-gradient(90deg,#e53935,#1e88e5,#283593);
+}
+</style>
+</head>
+
+<body>
+<div class="container">
+<h1>🔴🔵 Pokédex Gen 8 – Shiny Living Dex</h1>
+
+<input id="commandInput" class="search-box" placeholder="!sld grookey / !sr grookey">
+
+<div class="progress"></div>
+<div id="pokemonGrid" class="grid"></div>
+</div>
+
+<script>
+function playCry(num){
+  new Audio(`https://raw.githubusercontent.com/PokeAPI/cries/main/cries/pokemon/latest/${num}.ogg`).play();
+}
+
+const pokemonData = [
+{num:810,nameFr:"Ouistempo",nameEn:"Grookey",types:["Plante"],height:"0.3 m",weight:"5.0 kg"}, {num:811,nameFr:"Badabouin",nameEn:"Thwackey",types:["Plante"],height:"0.7 m",weight:"14.0 kg"}, {num:812,nameFr:"Gorythmic",nameEn:"Rillaboom",types:["Plante"],height:"2.1 m",weight:"90.0 kg"}, {num:813,nameFr:"Flambino",nameEn:"Scorbunny",types:["Feu"],height:"0.3 m",weight:"4.5 kg"}, {num:814,nameFr:"Lapyro",nameEn:"Raboot",types:["Feu"],height:"0.6 m",weight:"9.0 kg"}, {num:815,nameFr:"Pyrobut",nameEn:"Cinderace",types:["Feu"],height:"1.4 m",weight:"33.0 kg"}, {num:816,nameFr:"Larméléon",nameEn:"Sobble",types:["Eau"],height:"0.3 m",weight:"4.0 kg"}, {num:817,nameFr:"Arrozard",nameEn:"Drizzile",types:["Eau"],height:"0.7 m",weight:"11.5 kg"}, {num:818,nameFr:"Lézargus",nameEn:"Inteleon",types:["Eau"],height:"1.9 m",weight:"45.2 kg"}, {num:819,nameFr:"Rongourmand",nameEn:"Skwovet",types:["Normal"],height:"0.3 m",weight:"2.5 kg"}, {num:820,nameFr:"Rongrigou",nameEn:"Greedent",types:["Normal"],height:"0.6 m",weight:"6.0 kg"}, {num:821,nameFr:"Minisange",nameEn:"Rookidee",types:["Vol"],height:"0.2 m",weight:"1.8 kg"}, {num:822,nameFr:"Bleuseille",nameEn:"Corvisquire",types:["Vol"],height:"0.8 m",weight:"16.0 kg"}, {num:823,nameFr:"Corvaillus",nameEn:"Corviknight",types:["Vol","Acier"],height:"2.2 m",weight:"75.0 kg"}, {num:824,nameFr:"Larvadar",nameEn:"Blipbug",types:["Insecte"],height:"0.4 m",weight:"8.0 kg"}, {num:825,nameFr:"Coléodôme",nameEn:"Dottler",types:["Insecte","Psy"],height:"0.4 m",weight:"19.5 kg"}, {num:826,nameFr:"Astronelle",nameEn:"Orbeetle",types:["Insecte","Psy"],height:"0.4 m",weight:"40.8 kg"}, {num:827,nameFr:"Goupilou",nameEn:"Nickit",types:["Ténèbres"],height:"0.6 m",weight:"8.9 kg"}, {num:828,nameFr:"Roublenard",nameEn:"Thievul",types:["Ténèbres"],height:"1.2 m",weight:"19.9 kg"}, {num:829,nameFr:"Moumouton",nameEn:"Gossifleur",types:["Plante"],height:"0.4 m",weight:"2.2 kg"}, {num:830,nameFr:"Moumouflon",nameEn:"Eldegoss",types:["Plante"],height:"0.5 m",weight:"2.5 kg"}, {num:831,nameFr:"Tournicoton",nameEn:"Wooloo",types:["Normal"],height:"0.6 m",weight:"6.0 kg"}, {num:832,nameFr:"Moumouflon",nameEn:"Dubwool",types:["Normal"],height:"1.3 m",weight:"43.0 kg"}, {num:833,nameFr:"Khélocrok",nameEn:"Chewtle",types:["Eau"],height:"0.3 m",weight:"8.5 kg"}, {num:834,nameFr:"Torgamord",nameEn:"Drednaw",types:["Eau","Roche"],height:"1.0 m",weight:"115.5 kg"}, {num:835,nameFr:"Voltoutou",nameEn:"Yamper",types:["Électrik"],height:"0.3 m",weight:"13.5 kg"}, {num:836,nameFr:"Fulgudog",nameEn:"Boltund",types:["Électrik"],height:"1.0 m",weight:"34.0 kg"}, {num:837,nameFr:"Charbi",nameEn:"Rolycoly",types:["Roche"],height:"0.3 m",weight:"12.0 kg"}, {num:838,nameFr:"Wagomine",nameEn:"Carkol",types:["Roche","Feu"],height:"1.1 m",weight:"78.0 kg"}, {num:839,nameFr:"Monthracite",nameEn:"Coalossal",types:["Roche","Feu"],height:"2.8 m",weight:"310.5 kg"}, {num:840,nameFr:"Verpom",nameEn:"Applin",types:["Plante","Dragon"],height:"0.2 m",weight:"0.5 kg"}, {num:841,nameFr:"Pomdrapi",nameEn:"Flapple",types:["Plante","Dragon"],height:"0.3 m",weight:"1.0 kg"}, {num:842,nameFr:"Dratatin",nameEn:"Appletun",types:["Plante","Dragon"],height:"0.4 m",weight:"13.0 kg"},
+{num:843,nameFr:"Dunaconda",nameEn:"Silicobra",types:["Sol"],height:"2.2 m",weight:"7.6 kg"},
+{num:844,nameFr:"Dunaja",nameEn:"Sandaconda",types:["Sol"],height:"3.8 m",weight:"65.5 kg"},
+{num:845,nameFr:"Nigosier",nameEn:"Cramorant",types:["Vol","Eau"],height:"0.8 m",weight:"18.0 kg"},
+{num:846,nameFr:"Embrochet",nameEn:"Arrokuda",types:["Eau"],height:"0.5 m",weight:"1.0 kg"},
+{num:847,nameFr:"Hastacuda",nameEn:"Barraskewda",types:["Eau"],height:"1.3 m",weight:"30.0 kg"},
+{num:848,nameFr:"Toxizap",nameEn:"Toxel",types:["Électrik","Poison"],height:"0.4 m",weight:"11.0 kg"},
+{num:849,nameFr:"Salarsen",nameEn:"Toxtricity",types:["Électrik","Poison"],height:"1.6 m",weight:"40.0 kg"},
+{num:850,nameFr:"Grillepattes",nameEn:"Sizzlipede",types:["Feu","Insecte"],height:"0.7 m",weight:"1.0 kg"},
+{num:851,nameFr:"Scolocendre",nameEn:"Centiskorch",types:["Feu","Insecte"],height:"3.0 m",weight:"120.0 kg"},
+{num:852,nameFr:"Poulpaf",nameEn:"Clobbopus",types:["Combat"],height:"0.6 m",weight:"4.0 kg"},
+{num:853,nameFr:"Krakos",nameEn:"Grapploct",types:["Combat"],height:"1.6 m",weight:"39.0 kg"},
+{num:854,nameFr:"Théffroi",nameEn:"Sinistea",types:["Spectre"],height:"0.1 m",weight:"0.2 kg"},
+{num:855,nameFr:"Polthégeist",nameEn:"Polteageist",types:["Spectre"],height:"0.2 m",weight:"0.4 kg"},
+{num:856,nameFr:"Bibichut",nameEn:"Hatenna",types:["Psy"],height:"0.4 m",weight:"3.4 kg"},
+{num:857,nameFr:"Chapotus",nameEn:"Hattrem",types:["Psy"],height:"0.6 m",weight:"4.8 kg"},
+{num:858,nameFr:"Sorcilence",nameEn:"Hatterene",types:["Psy","Fée"],height:"2.1 m",weight:"5.1 kg"},
+{num:859,nameFr:"Grimalin",nameEn:"Impidimp",types:["Ténèbres","Fée"],height:"0.4 m",weight:"5.5 kg"},
+{num:860,nameFr:"Fourbelin",nameEn:"Morgrem",types:["Ténèbres","Fée"],height:"0.8 m",weight:"12.5 kg"},
+{num:861,nameFr:"Angoliath",nameEn:"Grimmsnarl",types:["Ténèbres","Fée"],height:"1.5 m",weight:"61.0 kg"},
+{num:862,nameFr:"Ixon",nameEn:"Obstagoon",types:["Ténèbres","Normal"],height:"1.6 m",weight:"46.0 kg"},
+{num:863,nameFr:"Berserkatt",nameEn:"Perrserker",types:["Acier"],height:"0.8 m",weight:"28.0 kg"},
+{num:864,nameFr:"Corayôme",nameEn:"Cursola",types:["Spectre"],height:"1.0 m",weight:"0.4 kg"},
+{num:865,nameFr:"Palarticho",nameEn:"Sirfetch'd",types:["Combat"],height:"0.8 m",weight:"117.0 kg"},
+{num:866,nameFr:"M. Glaquette",nameEn:"Mr. Rime",types:["Glace","Psy"],height:"1.5 m",weight:"58.2 kg"},
+{num:867,nameFr:"Tutétékri",nameEn:"Runerigus",types:["Sol","Spectre"],height:"1.6 m",weight:"66.6 kg"},
+{num:868,nameFr:"Crèmy",nameEn:"Milcery",types:["Fée"],height:"0.2 m",weight:"0.3 kg"},
+{num:869,nameFr:"Charmilly",nameEn:"Alcremie",types:["Fée"],height:"0.3 m",weight:"0.5 kg"},
+{num:870,nameFr:"Hexadron",nameEn:"Falinks",types:["Combat"],height:"3.0 m",weight:"62.0 kg"},
+{num:871,nameFr:"Wattapik",nameEn:"Pincurchin",types:["Électrik"],height:"0.3 m",weight:"1.0 kg"},
+{num:872,nameFr:"Frissonille",nameEn:"Snom",types:["Glace","Insecte"],height:"0.3 m",weight:"3.8 kg"},
+{num:873,nameFr:"Beldeneige",nameEn:"Frosmoth",types:["Glace","Insecte"],height:"1.3 m",weight:"42.0 kg"},
+{num:874,nameFr:"Dolman",nameEn:"Stonjourner",types:["Roche"],height:"2.5 m",weight:"520.0 kg"},
+{num:875,nameFr:"Bekaglaçon",nameEn:"Eiscue",types:["Glace"],height:"1.4 m",weight:"89.0 kg"},
+{num:876,nameFr:"Wimessir",nameEn:"Indeedee",types:["Psy","Normal"],height:"0.9 m",weight:"28.0 kg"},
+{num:877,nameFr:"Morpeko",nameEn:"Morpeko",types:["Électrik","Ténèbres"],height:"0.3 m",weight:"3.0 kg"},
+{num:878,nameFr:"Charibari",nameEn:"Cufant",types:["Acier"],height:"1.2 m",weight:"100.0 kg"},
+{num:879,nameFr:"Pachyradjah",nameEn:"Copperajah",types:["Acier"],height:"3.0 m",weight:"650.0 kg"},
+{num:880,nameFr:"Galvagon",nameEn:"Dracozolt",types:["Électrik","Dragon"],height:"1.8 m",weight:"190.0 kg"},
+{num:881,nameFr:"Galvagla",nameEn:"Arctozolt",types:["Électrik","Glace"],height:"2.3 m",weight:"150.0 kg"},
+{num:882,nameFr:"Hydragon",nameEn:"Dracovish",types:["Eau","Dragon"],height:"2.3 m",weight:"215.0 kg"},
+{num:883,nameFr:"Hydragla",nameEn:"Arctovish",types:["Eau","Glace"],height:"2.0 m",weight:"175.0 kg"},
+{num:884,nameFr:"Duralugon",nameEn:"Duraludon",types:["Acier","Dragon"],height:"1.8 m",weight:"40.0 kg"},
+{num:885,nameFr:"Fantyrm",nameEn:"Dreepy",types:["Dragon","Spectre"],height:"0.5 m",weight:"2.0 kg"},
+{num:886,nameFr:"Dispareptil",nameEn:"Drakloak",types:["Dragon","Spectre"],height:"1.4 m",weight:"11.0 kg"},
+{num:887,nameFr:"Lanssorien",nameEn:"Dragapult",types:["Dragon","Spectre"],height:"3.0 m",weight:"50.0 kg"},
+{num:888,nameFr:"Zacian",nameEn:"Zacian",types:["Fée"],height:"2.8 m",weight:"110.0 kg"},
+{num:889,nameFr:"Zamazenta",nameEn:"Zamazenta",types:["Combat"],height:"2.9 m",weight:"210.0 kg"},
+{num:890,nameFr:"Éthernatos",nameEn:"Eternatus",types:["Poison","Dragon"],height:"20.0 m",weight:"950.0 kg"},
+{num:891,nameFr:"Wushours",nameEn:"Kubfu",types:["Combat"],height:"0.6 m",weight:"12.0 kg"},
+{num:892,nameFr:"Shifours",nameEn:"Urshifu",types:["Combat","Ténèbres"],height:"1.9 m",weight:"105.0 kg"},
+{num:893,nameFr:"Zarude",nameEn:"Zarude",types:["Ténèbres","Plante"],height:"1.8 m",weight:"70.0 kg"},
+{num:894,nameFr:"Regieleki",nameEn:"Regieleki",types:["Électrik"],height:"1.2 m",weight:"145.0 kg"},
+{num:895,nameFr:"Regidrago",nameEn:"Regidrago",types:["Dragon"],height:"2.1 m",weight:"200.0 kg"},
+{num:896,nameFr:"Blizzeval",nameEn:"Glastrier",types:["Glace"],height:"2.2 m",weight:"800.0 kg"},
+{num:897,nameFr:"Spectreval",nameEn:"Spectrier",types:["Spectre"],height:"2.0 m",weight:"44.5 kg"},
+{num:898,nameFr:"Sylveroy",nameEn:"Calyrex",types:["Psy","Plante"],height:"1.1 m",weight:"7.7 kg"}
+];
+
+let caught = JSON.parse(localStorage.getItem("caughtPokemonGen8")) || [];
+
+function sprite(n,shiny=false){
+  return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon${shiny?"/shiny":""}/${n}.png`;
+}
+
+function render(){
+  pokemonGrid.innerHTML="";
+  pokemonData.forEach(p=>{
+    const isCaught=caught.includes(p.num);
+    const c=document.createElement("div");
+    c.className="pokemon-card";
+    c.innerHTML=`
+    <div class="inner">
+      <div class="face front">
+        <strong>#${p.num}</strong>
+        <div>${p.nameFr}</div>
+        ${isCaught?`<img src="${sprite(p.num)}">`:"❌"}
+        <div>${isCaught?"Capturé":"Non capturé"}</div>
+      </div>
+      <div class="face back">
+        <h3>${p.nameFr}</h3>
+        <div class="images">
+          <img src="${sprite(p.num)}">
+          <img src="${sprite(p.num,true)}">
+        </div>
+        ${p.types.map(t=>`<span class="type ${t}">${t}</span>`).join("")}
+        <div class="info"><span>📏 Taille</span><span>${p.height}</span></div>
+        <div class="info"><span>⚖️ Poids</span><span>${p.weight}</span></div>
+        <div class="info"><span>🇬🇧 Nom</span><span>${p.nameEn}</span></div>
+      </div>
+    </div>`;
+    if(isCaught){
+      c.onclick=()=>{
+        const f=c.classList.toggle("flipped");
+        if(f) playCry(p.num);
+      };
+    }
+    pokemonGrid.appendChild(c);
+  });
+  updateProgress();
+}
+
+function updateProgress(){
+  const p=document.querySelector(".progress");
+  p.innerHTML="";
+  pokemonData.forEach(x=>{
+    const s=document.createElement("div");
+    s.className="progress-segment";
+    if(caught.includes(x.num)) s.classList.add("caught");
+    p.appendChild(s);
+  });
+}
+
+commandInput.addEventListener("keydown",e=>{
+  if(e.key==="Enter"){
+    const v=e.target.value.toLowerCase().trim();
+    e.target.value="";
+    if(v.startsWith("!sld")){
+      const n=v.replace("!sld","").trim();
+      const p=pokemonData.find(x=>x.nameEn.toLowerCase()===n||x.nameFr.toLowerCase()===n);
+      if(p&&!caught.includes(p.num)){
+        caught.push(p.num);
+        localStorage.setItem("caughtPokemonGen8",JSON.stringify(caught));
+        playCry(p.num);
+        render();
+      }
+    }
+    if(v.startsWith("!sr")){
+      const n=v.replace("!sr","").trim();
+      const p=pokemonData.find(x=>x.nameEn.toLowerCase()===n||x.nameFr.toLowerCase()===n);
+      if(p){
+        caught=caught.filter(i=>i!==p.num);
+        localStorage.setItem("caughtPokemonGen8",JSON.stringify(caught));
+        render();
+      }
+    }
+  }
+});
+
+render();
+</script>
+</body>
+</html>
