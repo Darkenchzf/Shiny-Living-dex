@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Pokédex Gen 7 – Shiny Living Dex</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body {
+  background: linear-gradient(180deg,
+    #ffcc33 0%,
+    #ff9800 25%,
+    #5e35b1 55%,
+    #1a237e 100%);
+  font-family: "Trebuchet MS", Arial, sans-serif;
+  margin: 0;
+}
+
+.container {
+  max-width: 1300px;
+  margin: auto;
+  padding: 20px;
+}
+
+h1 {
+  text-align: center;
+  color: #fffde7;
+  letter-spacing: 2px;
+  text-shadow:
+    0 0 12px rgba(255,193,7,0.9),
+    0 0 22px rgba(156,39,176,0.9);
+}
+
+.search-box {
+  width: 100%;
+  padding: 12px;
+  font-size: 16px;
+  margin-bottom: 18px;
+  border-radius: 12px;
+  border: none;
+  background: rgba(255,255,255,0.95);
+  box-shadow: 0 0 0 3px #ffc107, 0 0 0 6px #7e57c2;
+  outline: none;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 18px;
+}
+
+.pokemon-card { perspective: 1000px; }
+
+.inner {
+  position: relative;
+  width: 100%;
+  height: 300px;
+  transition: transform 0.6s;
+  transform-style: preserve-3d;
+  cursor: pointer;
+}
+
+.pokemon-card.flipped .inner {
+  transform: rotateY(180deg);
+}
+
+.face {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  backface-visibility: hidden;
+  border-radius: 18px;
+  padding: 14px;
+  box-sizing: border-box;
+  box-shadow: 0 12px 25px rgba(0,0,0,0.5);
+}
+
+/* ☀️ SOLEIL */
+.front {
+  background: linear-gradient(135deg,#ffeb3b,#ff9800,#f57c00);
+  color: #3e2723;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 3px solid #ffd54f;
+  box-shadow: 0 0 20px rgba(255,193,7,0.8);
+}
+
+/* 🌙 LUNE */
+.back {
+  background: linear-gradient(135deg,#512da8,#311b92,#1a237e);
+  transform: rotateY(180deg);
+  font-size: 13px;
+  color: #ede7f6;
+  border: 3px solid #9575cd;
+  box-shadow: 0 0 20px rgba(149,117,205,0.8);
+}
+
+.images img { width: 72px; }
+
+.type {
+  display: inline-block;
+  padding: 4px 10px;
+  margin: 2px;
+  border-radius: 14px;
+  font-size: 12px;
+  font-weight: bold;
+  color: white;
+}
+
+.type.Plante{background:#4CAF50}
+.type.Feu{background:#EF5350}
+.type.Eau{background:#42A5F5}
+.type.Électrik{background:#FDD835;color:black}
+.type.Glace{background:#4DD0E1;color:black}
+.type.Combat{background:#E53935}
+.type.Poison{background:#AB47BC}
+.type.Sol{background:#A1887F}
+.type.Vol{background:#7986CB}
+.type.Psy{background:#EC407A}
+.type.Insecte{background:#9CCC65;color:black}
+.type.Roche{background:#BCAAA4}
+.type.Spectre{background:#7E57C2}
+.type.Dragon{background:#5C6BC0}
+.type.Ténèbres{background:#424242}
+.type.Acier{background:#B0BEC5;color:black}
+.type.Fée{background:#F48FB1}
+.type.Normal{background:#BDBDBD;color:black}
+
+.info {
+  background: rgba(255,255,255,0.15);
+  padding: 5px;
+  border-radius: 8px;
+  margin-top: 5px;
+}
+
+.status { margin-top: 8px; font-weight: bold; }
+
+.progress {
+  display: flex;
+  gap: 2px;
+  margin-bottom: 22px;
+  padding: 6px;
+  height: 26px;
+  border-radius: 14px;
+  background: linear-gradient(90deg,#ffeb3b,#ff9800,#7e57c2,#1a237e);
+  border: 2px solid #fff;
+}
+
+.progress-segment {
+  flex: 1;
+  background: rgba(255,255,255,0.15);
+  border-radius: 6px;
+}
+
+.progress-segment.caught {
+  background: linear-gradient(90deg,#ffeb3b,#ff9800,#7e57c2,#1a237e);
+  background-size: 200% 100%;
+  animation: shimmer 3s linear infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
+}
+</style>
+</head>
+
+<body>
+<div class="container">
+<h1>☀️🌙 Pokédex Gen 7 – Shiny Living Dex (Alola) 🌴</h1>
+
+<input id="commandInput" class="search-box" placeholder="!sld brindibou">
+
+<div class="progress"></div>
+<div id="pokemonGrid" class="grid"></div>
+</div>
+
+<script>
+function playCry(num){
+  const cry = new Audio(
+    `https://raw.githubusercontent.com/PokeAPI/cries/main/cries/pokemon/latest/${num}.ogg`
+  );
+  cry.volume = 0.6;
+  cry.play();
+}
+
+const pokemonData = [
+  {num:722,nameFr:"Brindibou",nameEn:"Rowlet",types:["Plante","Vol"],height:"0.3 m",weight:"1.5 kg"},
+  {num:723,nameFr:"Efflèche",nameEn:"Dartrix",types:["Plante","Vol"],height:"0.7 m",weight:"16.0 kg"},
+  {num:724,nameFr:"Archéduc",nameEn:"Decidueye",types:["Plante","Spectre"],height:"1.6 m",weight:"36.6 kg"},
+  {num:725,nameFr:"Flamiaou",nameEn:"Litten",types:["Feu"],height:"0.4 m",weight:"4.3 kg"},
+  {num:726,nameFr:"Matoufeu",nameEn:"Torracat",types:["Feu"],height:"0.7 m",weight:"25.0 kg"},
+  {num:727,nameFr:"Félinferno",nameEn:"Incineroar",types:["Feu","Ténèbres"],height:"1.8 m",weight:"83.0 kg"},
+  {num:728,nameFr:"Otaquin",nameEn:"Popplio",types:["Eau"],height:"0.4 m",weight:"7.5 kg"},
+  {num:729,nameFr:"Otarlette",nameEn:"Brionne",types:["Eau"],height:"0.6 m",weight:"17.5 kg"},
+  {num:730,nameFr:"Oratoria",nameEn:"Primarina",types:["Eau","Fée"],height:"1.8 m",weight:"44.0 kg"},
+  {num:731,nameFr:"Picassaut",nameEn:"Pikipek",types:["Normal","Vol"],height:"0.3 m",weight:"1.2 kg"},
+  {num:732,nameFr:"Piclairon",nameEn:"Trumbeak",types:["Normal","Vol"],height:"0.6 m",weight:"14.8 kg"},
+  {num:733,nameFr:"Bazoucan",nameEn:"Toucannon",types:["Normal","Vol"],height:"1.1 m",weight:"26.0 kg"},
+  {num:734,nameFr:"Manglouton",nameEn:"Yungoos",types:["Normal"],height:"0.4 m",weight:"6.0 kg"},
+  {num:735,nameFr:"Argouste",nameEn:"Gumshoos",types:["Normal"],height:"0.7 m",weight:"14.2 kg"},
+  {num:736,nameFr:"Larvibule",nameEn:"Grubbin",types:["Insecte"],height:"0.4 m",weight:"4.4 kg"},
+  {num:737,nameFr:"Chrysapile",nameEn:"Charjabug",types:["Insecte","Électrik"],height:"0.5 m",weight:"10.5 kg"},
+  {num:738,nameFr:"Lucanon",nameEn:"Vikavolt",types:["Insecte","Électrik"],height:"1.5 m",weight:"45.0 kg"},
+  {num:739,nameFr:"Crabagarre",nameEn:"Crabrawler",types:["Combat"],height:"0.6 m",weight:"7.0 kg"},
+  {num:740,nameFr:"Crabominable",nameEn:"Crabominable",types:["Combat","Glace"],height:"1.7 m",weight:"180.0 kg"},
+  {num:741,nameFr:"Plumeline",nameEn:"Oricorio",types:["Feu","Vol"],height:"0.6 m",weight:"3.4 kg"},
+  {num:742,nameFr:"Bombydou",nameEn:"Cutiefly",types:["Insecte","Fée"],height:"0.1 m",weight:"0.2 kg"},
+  {num:743,nameFr:"Rubombelle",nameEn:"Ribombee",types:["Insecte","Fée"],height:"0.2 m",weight:"0.5 kg"},
+  {num:744,nameFr:"Rocabot",nameEn:"Rockruff",types:["Roche"],height:"0.5 m",weight:"9.2 kg"},
+  {num:745,nameFr:"Lougaroc",nameEn:"Lycanroc",types:["Roche"],height:"0.8 m",weight:"25.0 kg"},
+  {num:746,nameFr:"Froussardine",nameEn:"Wishiwashi",types:["Eau"],height:"0.2 m",weight:"0.3 kg"},
+  {num:747,nameFr:"Vorastérie",nameEn:"Mareanie",types:["Poison","Eau"],height:"0.4 m",weight:"8.0 kg"},
+  {num:748,nameFr:"Prédastérie",nameEn:"Toxapex",types:["Poison","Eau"],height:"0.7 m",weight:"14.5 kg"},
+  {num:749,nameFr:"Tiboudet",nameEn:"Mudbray",types:["Sol"],height:"1.0 m",weight:"110.0 kg"},
+  {num:750,nameFr:"Bourrinos",nameEn:"Mudsdale",types:["Sol"],height:"2.5 m",weight:"920.0 kg"},
+  {num:751,nameFr:"Araqua",nameEn:"Dewpider",types:["Eau","Insecte"],height:"0.3 m",weight:"4.0 kg"},
+  {num:752,nameFr:"Tarenbulle",nameEn:"Araquanid",types:["Eau","Insecte"],height:"1.8 m",weight:"82.0 kg"},
+  {num:753,nameFr:"Mimantis",nameEn:"Fomantis",types:["Plante"],height:"0.3 m",weight:"1.5 kg"},
+  {num:754,nameFr:"Floramantis",nameEn:"Lurantis",types:["Plante"],height:"0.9 m",weight:"18.5 kg"},
+  {num:755,nameFr:"Spododo",nameEn:"Morelull",types:["Plante","Fée"],height:"0.2 m",weight:"1.5 kg"},
+  {num:756,nameFr:"Lampignon",nameEn:"Shiinotic",types:["Plante","Fée"],height:"1.0 m",weight:"11.5 kg"},
+  {num:757,nameFr:"Tritox",nameEn:"Salandit",types:["Poison","Feu"],height:"0.6 m",weight:"4.8 kg"},
+  {num:758,nameFr:"Malamandre",nameEn:"Salazzle",types:["Poison","Feu"],height:"1.2 m",weight:"22.2 kg"},
+  {num:759,nameFr:"Nounourson",nameEn:"Stufful",types:["Normal","Combat"],height:"0.5 m",weight:"6.8 kg"},
+  {num:760,nameFr:"Chelours",nameEn:"Bewear",types:["Normal","Combat"],height:"2.1 m",weight:"135.0 kg"},
+  {num:761,nameFr:"Croquine",nameEn:"Bounsweet",types:["Plante"],height:"0.3 m",weight:"3.2 kg"},
+  {num:762,nameFr:"Candine",nameEn:"Steenee",types:["Plante"],height:"0.7 m",weight:"8.2 kg"},
+  {num:763,nameFr:"Sucreine",nameEn:"Tsareena",types:["Plante"],height:"1.2 m",weight:"21.4 kg"},
+  {num:764,nameFr:"Guérilande",nameEn:"Comfey",types:["Fée"],height:"0.1 m",weight:"0.3 kg"},
+  {num:765,nameFr:"Gouroutan",nameEn:"Oranguru",types:["Normal","Psy"],height:"1.5 m",weight:"76.0 kg"},
+  {num:766,nameFr:"Quartermac",nameEn:"Passimian",types:["Combat"],height:"2.0 m",weight:"82.8 kg"},
+  {num:767,nameFr:"Sovkipou",nameEn:"Wimpod",types:["Insecte","Eau"],height:"0.5 m",weight:"12.0 kg"},
+  {num:768,nameFr:"Sarmuraï",nameEn:"Golisopod",types:["Insecte","Eau"],height:"2.0 m",weight:"108.0 kg"},
+  {num:769,nameFr:"Bacabouh",nameEn:"Sandygast",types:["Spectre","Sol"],height:"0.5 m",weight:"70.0 kg"},
+  {num:770,nameFr:"Trépassable",nameEn:"Palossand",types:["Spectre","Sol"],height:"1.3 m",weight:"250.0 kg"},
+  {num:771,nameFr:"Concombaffe",nameEn:"Pyukumuku",types:["Eau"],height:"0.3 m",weight:"1.2 kg"},
+  {num:772,nameFr:"Type:0",nameEn:"Type: Null",types:["Normal"],height:"1.9 m",weight:"120.5 kg"},
+  {num:773,nameFr:"Silvallié",nameEn:"Silvally",types:["Normal"],height:"2.3 m",weight:"100.5 kg"},
+  {num:774,nameFr:"Météno",nameEn:"Minior",types:["Roche","Vol"],height:"0.3 m",weight:"40.0 kg"},
+  {num:775,nameFr:"Dodoala",nameEn:"Komala",types:["Normal"],height:"0.4 m",weight:"19.9 kg"},
+  {num:776,nameFr:"Boumata",nameEn:"Turtonator",types:["Feu","Dragon"],height:"2.0 m",weight:"212.0 kg"},
+  {num:777,nameFr:"Togedemaru",nameEn:"Togedemaru",types:["Électrik","Acier"],height:"0.3 m",weight:"3.3 kg"},
+  {num:778,nameFr:"Mimiqui",nameEn:"Mimikyu",types:["Spectre","Fée"],height:"0.2 m",weight:"0.7 kg"},
+  {num:779,nameFr:"Denticrisse",nameEn:"Bruxish",types:["Eau","Psy"],height:"0.9 m",weight:"19.0 kg"},
+  {num:780,nameFr:"Draïeul",nameEn:"Drampa",types:["Normal","Dragon"],height:"3.0 m",weight:"185.0 kg"},
+  {num:781,nameFr:"Sinistrail",nameEn:"Dhelmise",types:["Spectre","Plante"],height:"3.9 m",weight:"210.0 kg"},
+  {num:782,nameFr:"Bébécaille",nameEn:"Jangmo-o",types:["Dragon"],height:"0.6 m",weight:"29.7 kg"},
+  {num:783,nameFr:"Écaïd",nameEn:"Hakamo-o",types:["Dragon","Combat"],height:"1.2 m",weight:"47.0 kg"},
+  {num:784,nameFr:"Ékaïser",nameEn:"Kommo-o",types:["Dragon","Combat"],height:"1.6 m",weight:"78.2 kg"},
+  {num:785,nameFr:"Tokorico",nameEn:"Tapu Koko",types:["Électrik","Fée"],height:"1.8 m",weight:"20.5 kg"},
+  {num:786,nameFr:"Tokopiyon",nameEn:"Tapu Lele",types:["Psy","Fée"],height:"1.2 m",weight:"18.6 kg"},
+  {num:787,nameFr:"Tokotoro",nameEn:"Tapu Bulu",types:["Plante","Fée"],height:"1.9 m",weight:"45.5 kg"},
+  {num:788,nameFr:"Tokopisco",nameEn:"Tapu Fini",types:["Eau","Fée"],height:"1.3 m",weight:"21.2 kg"},
+  {num:789,nameFr:"Cosmog",nameEn:"Cosmog",types:["Psy"],height:"0.2 m",weight:"0.1 kg"},
+  {num:790,nameFr:"Cosmovum",nameEn:"Cosmoem",types:["Psy"],height:"0.1 m",weight:"999.9 kg"},
+  {num:791,nameFr:"Solgaleo",nameEn:"Solgaleo",types:["Psy","Acier"],height:"3.4 m",weight:"230.0 kg"},
+  {num:792,nameFr:"Lunala",nameEn:"Lunala",types:["Psy","Spectre"],height:"4.0 m",weight:"120.0 kg"},
+  {num:793,nameFr:"Zéroïd",nameEn:"Nihilego",types:["Roche","Poison"],height:"1.2 m",weight:"55.5 kg"},
+  {num:794,nameFr:"Mouscoto",nameEn:"Buzzwole",types:["Insecte","Combat"],height:"2.4 m",weight:"333.6 kg"},
+  {num:795,nameFr:"Cancrelove",nameEn:"Pheromosa",types:["Insecte","Combat"],height:"1.8 m",weight:"25.0 kg"},
+  {num:796,nameFr:"Câblifère",nameEn:"Xurkitree",types:["Électrik"],height:"3.8 m",weight:"100.0 kg"},
+  {num:797,nameFr:"Bamboiselle",nameEn:"Celesteela",types:["Acier","Vol"],height:"9.2 m",weight:"999.9 kg"},
+  {num:798,nameFr:"Katagami",nameEn:"Kartana",types:["Plante","Acier"],height:"0.3 m",weight:"0.1 kg"},
+  {num:799,nameFr:"Engloutyran",nameEn:"Guzzlord",types:["Ténèbres","Dragon"],height:"5.5 m",weight:"888.0 kg"},
+  {num:800,nameFr:"Necrozma",nameEn:"Necrozma",types:["Psy"],height:"2.4 m",weight:"230.0 kg"},
+  {num:801,nameFr:"Magearna",nameEn:"Magearna",types:["Acier","Fée"],height:"1.0 m",weight:"80.5 kg"},
+  {num:802,nameFr:"Marshadow",nameEn:"Marshadow",types:["Combat","Spectre"],height:"0.7 m",weight:"22.2 kg"},
+  {num:803,nameFr:"Vémini",nameEn:"Poipole",types:["Poison"],height:"0.6 m",weight:"1.8 kg"},
+  {num:804,nameFr:"Mandrillon",nameEn:"Naganadel",types:["Poison","Dragon"],height:"3.6 m",weight:"150.0 kg"},
+  {num:805,nameFr:"Ama-Ama",nameEn:"Stakataka",types:["Roche","Acier"],height:"5.5 m",weight:"820.0 kg"},
+  {num:806,nameFr:"Pierroteknik",nameEn:"Blacephalon",types:["Feu","Spectre"],height:"1.8 m",weight:"13.0 kg"},
+  {num:807,nameFr:"Zeraora",nameEn:"Zeraora",types:["Électrik"],height:"1.5 m",weight:"44.5 kg"},
+  {num:808,nameFr:"Meltan",nameEn:"Meltan",types:["Acier"],height:"0.2 m",weight:"8.0 kg"},
+  {num:809,nameFr:"Melmetal",nameEn:"Melmetal",types:["Acier"],height:"2.5 m",weight:"800.0 kg"}
+];
+
+let caughtPokemon = JSON.parse(localStorage.getItem("caughtPokemonGen7")) || [];
+
+function normalize(t){
+  return t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+}
+
+function sprite(num,shiny=false){
+  return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon${shiny?"/shiny":""}/${num}.png`;
+}
+
+function render(){
+  const grid=document.getElementById("pokemonGrid");
+  grid.innerHTML="";
+
+  pokemonData.forEach(p=>{
+    const caught=caughtPokemon.includes(p.num);
+    const card=document.createElement("div");
+    card.className="pokemon-card";
+
+    card.innerHTML=`
+      <div class="inner">
+        <div class="face front">
+          <strong>#${p.num}</strong>
+          <div>${p.nameFr}</div>
+          ${caught?`<img src="${sprite(p.num)}">`:"❌"}
+          <div class="status">${caught?"Capturé":"Non capturé"}</div>
+        </div>
+
+        <div class="face back">
+          <h3>${p.nameFr}</h3>
+          <div class="images">
+            <img src="${sprite(p.num)}">
+            <img src="${sprite(p.num,true)}">
+          </div>
+          <div>${p.types.map(t=>`<span class="type ${t}">${t}</span>`).join("")}</div>
+          <div class="info">📏 ${p.height}</div>
+          <div class="info">⚖️ ${p.weight}</div>
+          <div class="info">🇬🇧 ${p.nameEn}</div>
+          <div class="status">⭐ Shiny Living Dex</div>
+        </div>
+      </div>`;
+
+    if(caught){
+      card.onclick=()=>{
+        const r=card.classList.toggle("flipped");
+        if(r) playCry(p.num);
+      };
+    }
+
+    grid.appendChild(card);
+  });
+  updateProgress();
+}
+
+function updateProgress(){
+  const progress=document.querySelector(".progress");
+  progress.innerHTML="";
+  for(let i=722;i<=809;i++){
+    const seg=document.createElement("div");
+    seg.className="progress-segment";
+    if(caughtPokemon.includes(i)) seg.classList.add("caught");
+    progress.appendChild(seg);
+  }
+}
+
+document.getElementById("commandInput").addEventListener("keydown",e=>{
+  if(e.key==="Enter"){
+    const cmd=normalize(e.target.value.trim());
+    e.target.value="";
+
+    if(cmd.startsWith("!sld")){
+      const name=cmd.replace("!sld","").trim();
+      const p=pokemonData.find(x=>normalize(x.nameFr)===name||normalize(x.nameEn)===name);
+      if(p&&!caughtPokemon.includes(p.num)){
+        caughtPokemon.push(p.num);
+        localStorage.setItem("caughtPokemonGen7",JSON.stringify(caughtPokemon));
+        playCry(p.num);
+        render();
+      }
+    }
+
+    if(cmd.startsWith("!sr")){
+      const name=cmd.replace("!sr","").trim();
+      const p=pokemonData.find(x=>normalize(x.nameFr)===name||normalize(x.nameEn)===name);
+      if(p){
+        caughtPokemon=caughtPokemon.filter(n=>n!==p.num);
+        localStorage.setItem("caughtPokemonGen7",JSON.stringify(caughtPokemon));
+        render();
+      }
+    }
+  }
+});
+
+render();
+</script>
+</body>
+</html>
